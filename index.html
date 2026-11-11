@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radial Arc Navigation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f4f2ee;
+      --text: #292524;
+      --accent: #cb1d66;
+      --ease-bounce: cubic-bezier(0.22, 1.4, 0.36, 1);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg) radial-gradient(rgba(41, 37, 36, 0.08) 1.2px, transparent 1.2px) 0 0 / 24px 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .radial-menu {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Backdrop & Shockwave */
+    .radial-halo {
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+      opacity: 0;
+      transform: scale(0.6);
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s var(--ease-bounce);
+    }
+
+    .radial-halo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(203, 29, 102, 0.45);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .radial-menu.open .radial-halo {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .radial-menu.open .radial-halo::after {
+      animation: shockwave 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+    }
+
+    @keyframes shockwave {
+      0% { transform: scale(0.25); opacity: 0.85; border-width: 4px; }
+      100% { transform: scale(1.15); opacity: 0; border-width: 1px; }
+    }
+
+    /* Arc Nodes */
+    .menu-node {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(41, 37, 36, 0.12);
+      color: var(--c, var(--text));
+      border: none;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(0, 0) scale(0.4);
+      transition: transform 0.4s var(--ease-bounce), opacity 0.3s ease, background 0.2s, color 0.2s, box-shadow 0.2s;
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .radial-menu.open .menu-node {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(var(--x), var(--y)) scale(1);
+    }
+
+    .menu-node:hover {
+      background: var(--c, var(--accent));
+      color: #ffffff;
+      transform: translate(var(--x), var(--y)) scale(1.15) !important;
+      box-shadow: 0 8px 22px var(--c, var(--accent));
+    }
+
+    .menu-node:active {
+      transform: translate(var(--x), var(--y)) scale(0.92) !important;
+    }
+
+    .menu-node.active {
+      background: var(--c, var(--accent));
+      color: #ffffff;
+      box-shadow: 0 0 18px var(--c, var(--accent));
+    }
+
+    .menu-node svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Tooltip */
+    .menu-node::after {
+      content: attr(data-label);
+      position: absolute;
+      top: -26px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(41, 37, 36, 0.92);
+      color: #ffffff;
+      padding: 2px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .menu-node:hover::after {
+      opacity: 1;
+    }
+
+    /* Trigger (+ to ×) */
+    .menu-trigger {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: none;
+      outline: none;
+      background: linear-gradient(135deg, #f73874 0%, #cb1d66 100%);
+      box-shadow: 0 12px 28px rgba(203, 29, 102, 0.45);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .menu-trigger:hover {
+      transform: scale(1.08);
+      box-shadow: 0 16px 32px rgba(203, 29, 102, 0.55);
+    }
+
+    .menu-trigger:active {
+      transform: scale(0.92);
+    }
+
+    .menu-trigger::before,
+    .menu-trigger::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 2.5px;
+      background: #ffffff;
+      border-radius: 2px;
+      transition: transform 0.35s var(--ease-bounce);
+    }
+
+    .menu-trigger::after {
+      transform: rotate(90deg);
+    }
+
+    .radial-menu.open .menu-trigger::before {
+      transform: rotate(45deg);
+    }
+
+    .radial-menu.open .menu-trigger::after {
+      transform: rotate(-45deg);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Radial Menu -->
+  <div class="radial-menu">
+    <div class="radial-halo"></div>
+
+    <button class="menu-node active" data-label="Home" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>
+      </svg>
+    </button>
+
+    <button class="menu-node" data-label="Explore" aria-label="Explore">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+      </svg>
+    </button>
+
+    <button class="menu-node" data-label="Create" aria-label="Create">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+
+    <button class="menu-node" data-label="Favorites" aria-label="Favorites">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      </svg>
+    </button>
+
+    <button class="menu-node" data-label="Profile" aria-label="Profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+
+    <button class="menu-trigger" aria-label="Toggle menu" type="button"></button>
+  </div>
+
+  <script>
+    const menu = document.querySelector('.radial-menu');
+    const nodes = document.querySelectorAll('.menu-node');
+    const trigger = document.querySelector('.menu-trigger');
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6'];
+
+    // Position nodes along a 180° semi-circular arc
+    nodes.forEach((node, i) => {
+      const a = Math.PI - (Math.PI / 4) * i;
+      node.style.setProperty('--x', `${Math.round(100 * Math.cos(a))}px`);
+      node.style.setProperty('--y', `${Math.round(-100 * Math.sin(a))}px`);
+      node.style.setProperty('--c', colors[i]);
+      node.style.transitionDelay = `${i * 35}ms`;
+
+      node.onclick = (e) => {
+        e.stopPropagation();
+        nodes.forEach(n => n.classList.remove('active'));
+        node.classList.add('active');
+      };
+    });
+
+    trigger.onclick = (e) => {
+      e.stopPropagation();
+      menu.classList.toggle('open');
+    };
+
+    // Click outside or Escape to close
+    window.onclick = (e) => !menu.contains(e.target) && menu.classList.remove('open');
+    window.onkeydown = (e) => e.key === 'Escape' && menu.classList.remove('open');
+  </script>
+
+</body>
+</html>
